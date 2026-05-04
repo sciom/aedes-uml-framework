@@ -30,10 +30,10 @@ This document provides detailed results from the quantitative assumption analysi
 
 ---
 
-## Model 1: Hackenberger et al. (2013)
+## Model 1: Lončarić & Hackenberger (2013)
 
 ### Reference
-Hackenberger, B. K., Hackenberger, D. K., & Jarić, I. (2013). Stage and age structured *Aedes vexans* and *Culex pipiens* (Diptera: Culicidae) climate-dependent matrix population model. *Theoretical Population Biology*, 83, 82–94.
+Lončarić, Ž., & Hackenberger, B. K. (2013). Stage and age structured *Aedes vexans* and *Culex pipiens* (Diptera: Culicidae) climate-dependent matrix population model. *Theoretical Population Biology*, 83, 82–94. https://doi.org/10.1016/j.tpb.2012.08.002
 
 ### Assumptions Identified from Original Publication
 
@@ -145,7 +145,7 @@ Tran, A., L'Ambert, G., Lacour, G., Benoît, R., Demarchi, M., Cros, M., Cailly,
 
 | Model | Original | After UML | Newly Revealed | % Increase |
 |-------|----------|-----------|----------------|------------|
-| Hackenberger et al. (2013) | 3 | 8 | 5 | 167% |
+| Lončarić & Hackenberger (2013) | 3 | 8 | 5 | 167% |
 | Cailly et al. (2012) | 4 | 11 | 7 | 175% |
 | Tran et al. (2013) | 2 | 9 | 7 | 350% |
 | **Mean** | **3.0** | **9.3** | **6.3** | **210%** |
@@ -163,7 +163,7 @@ Tran, A., L'Ambert, G., Lacour, G., Benoît, R., Demarchi, M., Cros, M., Cailly,
 
 | Model | Cohen's κ | Interpretation |
 |-------|-----------|----------------|
-| Hackenberger et al. (2013) | 0.82 | Almost perfect |
+| Lončarić & Hackenberger (2013) | 0.82 | Almost perfect |
 | Cailly et al. (2012) | 0.78 | Substantial |
 | Tran et al. (2013) | 0.85 | Almost perfect |
 | **Mean** | **0.82** | **Almost perfect** |

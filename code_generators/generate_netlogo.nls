@@ -7,7 +7,7 @@
 ;;;
 ;;; Corresponds to the individual-based modeling paradigm described in:
 ;;;   UML-Based Framework for Aedes Population Dynamics
-;;;   Repository: https://github.com/bhackenberger/aedes-uml-framework
+;;;   Repository: https://github.com/sciom/aedes-uml-framework
 ;;;
 ;;; Life stages represented as agent breeds:
 ;;;   eggs      - Egg stage (aquatic)

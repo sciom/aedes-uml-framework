@@ -15,14 +15,14 @@
 #   - Placeholder implementations marked with TODO
 #
 # Corresponds to the matrix population paradigm described in:
-#   Lončarić & Hackenberger (2013) doi:10.1016/j.ecolmodel.2012.12.016
+#   Lončarić & Hackenberger (2013) doi:10.1016/j.tpb.2012.08.002
 #
 # Usage:
 #   Rscript generate_r_matrix.R > aedes_matrix_model.R
 #
 # Author: Aedes UML Framework
 # License: MIT
-# Repository: https://github.com/bhackenberger/aedes-uml-framework
+# Repository: https://github.com/sciom/aedes-uml-framework
 # ==============================================================================
 
 cat('#!/usr/bin/env Rscript
@@ -34,7 +34,7 @@ cat('#!/usr/bin/env Rscript
 # Fill in the vital-rate implementations marked with TODO.
 #
 # Based on: UML-Based Framework for Aedes Population Dynamics
-# Repository: https://github.com/bhackenberger/aedes-uml-framework
+# Repository: https://github.com/sciom/aedes-uml-framework
 # ==============================================================================
 
 # ------------------------------------------------------------------------------
@@ -207,7 +207,7 @@ density_survival <- function(L_total, p) {
 #\' @return         5x5 projection matrix (Lefkovitch)
 #\'
 #\' TODO: Extend to age-within-stage structure (age classes per stage)
-#\'       following the Loncari c & Hackenberger (2013) formulation.
+#\'       following the Lončarić & Hackenberger (2013) formulation.
 build_matrix <- function(temp, L_total = 0, p = default_params,
                          diapause = FALSE) {
 

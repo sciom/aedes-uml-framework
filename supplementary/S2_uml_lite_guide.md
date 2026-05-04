@@ -300,7 +300,7 @@ State2 --> [*]
 - **PlantUML website:** https://plantuml.com/
 - **Online editor:** https://www.plantuml.com/plantuml/
 - **UML specification:** https://www.omg.org/spec/UML/
-- **This framework repository:** https://github.com/bhackenberger/aedes-uml-framework
+- **This framework repository:** https://github.com/sciom/aedes-uml-framework
 
 ---
 
