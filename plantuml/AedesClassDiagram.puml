@@ -22,11 +22,12 @@ abstract class AquaticStage {
 
 class Egg {
   - hatchingThreshold: float
+  - minMoisture: float
   - diapauseState: boolean
   - diapausePhotoperiodThreshold: float
   - coldTolerance: float
   --
-  + hatch(temp: float, photoperiod: float): float
+  + hatch(temp: float, photoperiod: float, moisture: float): float
   + enterDiapause(): void
   + exitDiapause(temp: float, photoperiod: float): void
   + isDiapausing(): boolean
@@ -106,11 +107,13 @@ class BreedingSite {
   - siteID: string
   - siteType: SiteType
   - waterVolume: float
+  - moisture: float
   - maxCapacity: float
   - organicMatter: float
   - coordinates: Coordinates
   --
   + updateWaterLevel(precip: Precipitation): void
+  + getMoisture(): float
   + getCarryingCapacity(): float
   + addEggs(count: int): void
   + isEmpty(): boolean

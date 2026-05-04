@@ -37,7 +37,8 @@ aedes-uml-framework/
 │   ├── S1_questionnaire.md        # Expert evaluation questionnaire
 │   ├── S2_uml_lite_guide.md       # UML-lite quick-start guide
 │   ├── S3_assumption_analysis.md  # Quantitative assumption analysis results
-│   └── S4_terminology_mapping.md  # Ecological terminology mapping table
+│   ├── S4_terminology_mapping.md  # Ecological terminology mapping table
+│   └── S5_ci_cd_example.md        # Tier 3 CI/CD demonstration (GitHub Actions)
 │
 └── scripts/                   # Utility scripts
     ├── render_figures.sh          # Render all PlantUML diagrams
@@ -143,6 +144,7 @@ The skeletons implement the same conceptual structure as the UML diagrams:
 | `S2_uml_lite_guide.md` | Simplified UML notation guide for ecologists without UML background |
 | `S3_assumption_analysis.md` | Full results of the quantitative assumption analysis across three published models |
 | `S4_terminology_mapping.md` | Mapping between ecological terminology and UML element types |
+| `S5_ci_cd_example.md` | Tier 3 demonstration: GitHub Actions workflow for diagram rendering and lexical consistency checking |
 
 ---
 
