@@ -1,0 +1,199 @@
+@startuml AedesClassDiagram
+
+skinparam classAttributeIconSize 0
+hide circle
+
+abstract class LifeStage {
+  - abundance: float
+  - developmentRate: float
+  - mortalityRate: float
+  --
+  + develop(temp: float): void
+  + survive(rate: float): void
+  + getAbundance(): float
+}
+
+abstract class AquaticStage {
+  - carryingCapacity: float
+  - densityDependenceFactor: float
+  --
+  + calculateDensityMortality(totalDensity: float): float
+}
+
+class Egg {
+  - hatchingThreshold: float
+  - diapauseState: boolean
+  - diapausePhotoperiodThreshold: float
+  - coldTolerance: float
+  --
+  + hatch(temp: float, photoperiod: float): float
+  + enterDiapause(): void
+  + exitDiapause(temp: float, photoperiod: float): void
+  + isDiapausing(): boolean
+}
+
+class Larva {
+  - instarNumber: int
+  - instarThresholds: float[]
+  - accumulatedDegreeDays: float
+  --
+  + moult(): void
+  + pupate(): Pupa
+  + feedingRate(temp: float): float
+}
+
+class Pupa {
+  - emergenceThreshold: float
+  - accumulatedDegreeDays: float
+  --
+  + emerge(): Adult
+  + calculateEmergenceTime(temp: float): float
+}
+
+class Adult {
+  - sex: Sex
+  - gonotrophicCycleDay: int
+  - gonotrophicCycleLength: int
+  - bloodfedStatus: boolean
+  - matedStatus: boolean
+  - fecundity: float
+  - flightRange: float
+  --
+  + mate(): void
+  + seekHost(): void
+  + bloodFeed(): void
+  + developEggs(temp: float): void
+  + oviposit(site: BreedingSite): int
+  + isGravid(): boolean
+}
+
+enum Sex {
+  MALE
+  FEMALE
+}
+
+class Environment {
+  - currentDate: Date
+  - latitude: float
+  --
+  + advanceDay(): void
+  + getPhotoperiod(): float
+}
+
+class Temperature {
+  - dailyMean: float
+  - dailyMin: float
+  - dailyMax: float
+  - historicalData: float[]
+  --
+  + update(date: Date): void
+  + getDevelopmentModifier(baseRate: float): float
+  + getMortalityModifier(baseRate: float): float
+  + calculateDegreeDays(threshold: float): float
+}
+
+class Precipitation {
+  - dailyAmount: float
+  - cumulativeWeekly: float
+  - cumulativeMonthly: float
+  --
+  + update(date: Date): void
+  + getHabitatAvailability(): float
+  + getFloodingRisk(): float
+}
+
+class BreedingSite {
+  - siteID: string
+  - siteType: SiteType
+  - waterVolume: float
+  - maxCapacity: float
+  - organicMatter: float
+  - coordinates: Coordinates
+  --
+  + updateWaterLevel(precip: Precipitation): void
+  + getCarryingCapacity(): float
+  + addEggs(count: int): void
+  + isEmpty(): boolean
+}
+
+enum SiteType {
+  CONTAINER
+  TIRE
+  NATURAL
+  ARTIFICIAL
+}
+
+class Coordinates {
+  - latitude: float
+  - longitude: float
+}
+
+abstract class ControlMeasure {
+  - efficacy: float
+  - applicationDate: Date
+  - duration: int
+  - cost: float
+  --
+  + apply(): void
+  + isActive(currentDate: Date): boolean
+  + getResidualEfficacy(daysSinceApplication: int): float
+}
+
+class Larvicide {
+  - targetInstars: int[]
+  - resistanceFactor: float
+  --
+  + applyToSite(site: BreedingSite): void
+  + calculateMortalityIncrease(): float
+}
+
+class Adulticide {
+  - sprayRadius: float
+  - windSensitivity: float
+  --
+  + applyToArea(center: Coordinates, radius: float): void
+  + calculateMortalityIncrease(): float
+}
+
+class SourceReduction {
+  - sitesTargeted: BreedingSite[]
+  --
+  + removeSites(): void
+  + reduceCapacity(fraction: float): void
+}
+
+LifeStage <|-- AquaticStage
+AquaticStage <|-- Egg
+AquaticStage <|-- Larva
+AquaticStage <|-- Pupa
+LifeStage <|-- Adult
+
+ControlMeasure <|-- Larvicide
+ControlMeasure <|-- Adulticide
+ControlMeasure <|-- SourceReduction
+
+Environment *-- Temperature
+Environment *-- Precipitation
+
+LifeStage -- Temperature : affected by
+LifeStage -- Precipitation : affected by
+
+AquaticStage --o BreedingSite : contained in
+Adult ..> BreedingSite : oviposits in
+
+BreedingSite *-- Coordinates
+BreedingSite -- Precipitation : water level
+
+Larvicide ..> AquaticStage : targets
+Adulticide ..> Adult : targets
+SourceReduction ..> BreedingSite : removes
+
+Adult -- Sex
+
+note "Base class for all\nmosquito life stages" as N1
+N1 .. LifeStage
+
+note "Aquatic stages share\ndensity-dependent\nregulation" as N2
+N2 .. AquaticStage
+
+@enduml

@@ -1,0 +1,177 @@
+@startuml AedesSequenceDiagram
+
+title Component Interactions - Daily Time Step
+
+participant Simulation as Sim
+participant Environment as Env
+participant Temperature as Temp
+participant Precipitation as Precip
+participant BreedingSite as BS
+participant Egg as E
+participant Larva as L
+participant Pupa as P
+participant Adult as A
+
+== Daily Time Step Initialization ==
+
+Sim -> Env : advanceDay()
+activate Env
+Env -> Env : updateDate()
+Env -> Env : calculatePhotoperiod(latitude)
+
+Env -> Temp : update(currentDate)
+activate Temp
+Temp -> Temp : readDailyValues()
+Temp -> Temp : calculateMean()
+Temp -> Temp : calculateDegreeDays(baseTemp)
+Temp --> Env : dailyTemperature
+deactivate Temp
+
+Env -> Precip : update(currentDate)
+activate Precip
+Precip -> Precip : readDailyAmount()
+Precip -> Precip : updateCumulatives()
+Precip --> Env : dailyPrecipitation
+deactivate Precip
+
+Env --> Sim : environmentUpdated
+deactivate Env
+
+== Breeding Site Update ==
+
+Sim -> BS : updateWaterLevel(precipitation)
+activate BS
+BS -> Precip : getDailyAmount()
+Precip --> BS : amount
+BS -> BS : adjustVolume(amount, evaporation)
+BS -> BS : updateCarryingCapacity()
+BS --> Sim : habitatStatus
+deactivate BS
+
+== Egg Stage Processing ==
+
+Sim -> E : processDailyDynamics()
+activate E
+
+E -> Env : getPhotoperiod()
+Env --> E : photoperiod
+
+E -> Temp : getMeanTemperature()
+Temp --> E : meanTemp
+
+alt photoperiod < criticalThreshold
+  E -> E : induceDiapause()
+else photoperiod > criticalThreshold
+  E -> E : terminateDiapause()
+end
+
+E -> Temp : getDegreeDays(hatchThreshold)
+Temp --> E : accumulatedDD
+
+alt accumulatedDD >= hatchingThreshold
+  E -> L : transferHatchlings(count)
+  L --> E : accepted
+end
+
+E -> Temp : getMortalityModifier()
+Temp --> E : tempMortality
+E -> E : applyMortality(baseMortality * tempMortality)
+
+E --> Sim : eggDynamicsComplete
+deactivate E
+
+== Larval Stage Processing ==
+
+Sim -> L : processDailyDynamics()
+activate L
+
+L -> BS : getCurrentDensity()
+BS --> L : totalLarvalDensity
+
+L -> L : calculateDensityDependentMortality(density)
+
+L -> Temp : getDegreeDays(instarThreshold)
+Temp --> L : accumulatedDD
+
+loop for each instar
+  alt accumulatedDD >= instarThreshold
+    L -> L : advanceInstar()
+  end
+end
+
+alt instar == 4 AND ready
+  L -> P : transferMatureLarvae(count)
+  P --> L : accepted
+end
+
+L -> Temp : getMortalityModifier()
+Temp --> L : tempMortality
+L -> L : applyMortality(baseMort * tempMort * densityMort)
+
+L --> Sim : larvalDynamicsComplete
+deactivate L
+
+== Pupal Stage Processing ==
+
+Sim -> P : processDailyDynamics()
+activate P
+
+P -> Temp : getDegreeDays(pupalThreshold)
+Temp --> P : accumulatedDD
+
+alt accumulatedDD >= emergenceThreshold
+  P -> P : determineSex()
+  P -> A : transferEmergingAdults(count, sexRatio)
+  A --> P : accepted
+end
+
+P -> Temp : getMortalityModifier()
+Temp --> P : tempMortality
+P -> P : applyMortality(baseMortality * tempMortality)
+
+P --> Sim : pupalDynamicsComplete
+deactivate P
+
+== Adult Stage Processing ==
+
+Sim -> A : processDailyDynamics()
+activate A
+
+A -> A : ageAllAdults()
+A -> A : processTeneralMaturation()
+
+group Female Reproduction
+  A -> A : identifyHostSeekingFemales()
+  A -> A : processBloodFeeding()
+
+  A -> Temp : getDevelopmentRate()
+  Temp --> A : gonotrophicRate
+  A -> A : advanceGonotrophicCycle(rate)
+
+  alt gravidFemalesPresent
+    A -> BS : getAvailableSites()
+    BS --> A : suitableSites
+    A -> A : calculateFecundity()
+    A -> BS : depositEggs(site, eggCount)
+    BS -> E : addEggs(count)
+    E --> BS : eggsAdded
+    BS --> A : ovipositionComplete
+    A -> A : resetToHostSeeking()
+  end
+end
+
+A -> Temp : getMortalityModifier()
+Temp --> A : tempMortality
+A -> A : applyAgeDependentMortality()
+A -> A : applyMortality(mortality)
+
+A --> Sim : adultDynamicsComplete
+deactivate A
+
+== Output Recording ==
+
+Sim -> Sim : recordStateVariables()
+Sim -> Sim : calculateStatistics()
+Sim -> Sim : writeOutput()
+
+@enduml

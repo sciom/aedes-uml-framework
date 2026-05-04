@@ -1,0 +1,111 @@
+@startuml AedesActivityDiagram
+
+title Daily Simulation Time Step Workflow
+
+start
+
+:Initialize daily time step;
+note right
+  t = t + 1
+  Read date, update
+  environmental state
+end note
+
+:Read meteorological inputs;
+:Update Temperature object;
+:Update Precipitation object;
+:Calculate photoperiod from latitude and date;
+:Update breeding site water levels;
+
+fork
+  :Calculate temperature-dependent development rates;
+  :Calculate temperature-dependent mortality rates;
+  :Calculate degree-day accumulation;
+fork again
+  :Update breeding site water volumes;
+  if (precipitation > floodThreshold?) then (yes)
+    :Apply flood mortality to aquatic stages;
+  endif
+  if (waterVolume < minVolume?) then (yes)
+    :Apply desiccation mortality to aquatic stages;
+  endif
+end fork
+
+:=== Egg Dynamics ===;
+
+:Check diapause induction conditions;
+if (photoperiod < criticalPhotoperiod?) then (yes)
+  if (temp < diapauseInductionTemp?) then (yes)
+    :Induce diapause in susceptible eggs;
+  endif
+else (no)
+  :Check diapause termination conditions;
+  if (chillingRequirementMet AND temp > breakingTemp?) then (yes)
+    :Terminate diapause;
+  endif
+endif
+
+:Calculate egg hatching;
+:Transfer hatching eggs to L1;
+:Apply egg mortality;
+
+:=== Larval Dynamics ===;
+
+:Calculate density in each breeding site;
+:Calculate density-dependent mortality modifier;
+:Process instar transitions (L1->L2->L3->L4);
+:Identify L4 larvae ready for pupation;
+:Transfer mature L4 to pupal stage;
+:Apply larval mortality;
+note right
+  mortality = baseMortality *
+  tempModifier * densityModifier
+end note
+
+:=== Pupal Dynamics ===;
+
+:Accumulate pupal degree-days;
+if (degreeDays >= pupalThreshold?) then (yes)
+  :Calculate emergence;
+  :Determine sex ratio;
+  :Transfer to adult stage;
+endif
+:Apply pupal mortality;
+
+:=== Adult Dynamics ===;
+
+:Age all adults by one day;
+:Process teneral -> active transition;
+:Identify host-seeking females;
+:Calculate blood-feeding success;
+:Advance gonotrophic development;
+if (gravid females present?) then (yes)
+  :Identify suitable oviposition sites;
+  :Calculate eggs per female (fecundity);
+  :Distribute eggs to breeding sites;
+  :Reset female to host-seeking;
+endif
+:Apply adult mortality;
+
+:=== Control Interventions ===;
+
+if (control scheduled for today?) then (yes)
+  switch (control type?)
+  case (Larvicide)
+    :Apply larvicide to target sites;
+    :Increase larval mortality rate;
+  case (Adulticide)
+    :Apply adulticide to target area;
+    :Increase adult mortality rate;
+  case (Source Reduction)
+    :Remove or reduce breeding sites;
+  endswitch
+endif
+
+:Record state variables;
+:Calculate summary statistics;
+:Write to output files;
+
+stop
+
+@enduml

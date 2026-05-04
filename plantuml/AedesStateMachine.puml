@@ -1,0 +1,99 @@
+@startuml AedesStateMachine
+
+title Aedes Life Cycle State Machine
+
+[*] --> Egg : oviposition
+
+state Egg {
+  [*] --> EggActive
+  
+  EggActive : entry / resetDegreeDays()
+  EggActive : do / accumulateDD(temp)
+  
+  EggActive --> EggDiapausing : [photoperiod < criticalPP]
+  EggDiapausing --> EggActive : [photoperiod > criticalPP\nAND temp > breakingTemp]
+  
+  EggActive --> [*] : mortality
+  EggDiapausing --> [*] : mortality
+}
+
+Egg --> Larva : [degreeDays >= hatchThreshold\nAND moisture > minMoisture]
+
+state Larva {
+  [*] --> L1
+  
+  L1 : entry / instar = 1
+  L1 --> L2 : [degreeDays >= L1_threshold]
+  L1 --> [*] : mortality(temp, density)
+  
+  L2 : entry / instar = 2
+  L2 --> L3 : [degreeDays >= L2_threshold]
+  L2 --> [*] : mortality(temp, density)
+  
+  L3 : entry / instar = 3
+  L3 --> L4 : [degreeDays >= L3_threshold]
+  L3 --> [*] : mortality(temp, density)
+  
+  L4 : entry / instar = 4
+  L4 --> [*] : mortality(temp, density)
+}
+
+Larva --> Pupa : [instar == 4\nAND degreeDays >= L4_threshold]
+
+state Pupa {
+  [*] --> PupalDevelopment
+  
+  PupalDevelopment : do / accumulateDD(temp)
+  PupalDevelopment --> PupalMature : [degreeDays >= pupalThreshold]
+  
+  PupalMature : entry / determineSex()
+  PupalMature --> [*] : mortality
+  PupalDevelopment --> [*] : mortality
+}
+
+Pupa --> Adult : emerge()\n[mature]
+
+state Adult {
+  [*] --> Teneral
+  
+  Teneral : entry / age = 0
+  Teneral --> HostSeeking : [sex == FEMALE]
+  Teneral --> MateSeeking : [sex == MALE]
+  Teneral --> [*] : mortality
+  
+  MateSeeking : do / seekFemales()
+  MateSeeking --> [*] : mortality
+  
+  HostSeeking : do / seekHost()
+  HostSeeking --> Bloodfed : [bloodmealSuccess]
+  HostSeeking --> [*] : mortality
+  
+  Bloodfed : entry / startGonotrophicCycle()
+  Bloodfed : do / developEggs(temp)
+  Bloodfed --> Gravid : [gonotrophicCycleComplete]
+  Bloodfed --> [*] : mortality
+  
+  Gravid : do / seekOvipositionSite()
+  Gravid --> HostSeeking : oviposit(site)
+  Gravid --> [*] : mortality
+}
+
+note right of Egg
+  Diapause enables
+  overwintering in
+  temperate species
+end note
+
+note right of Larva
+  Density-dependent mortality
+  increases with larval
+  abundance in breeding site
+end note
+
+note right of Adult
+  Sex determination
+  occurs at pupal
+  emergence
+end note
+
+@enduml

@@ -1,0 +1,585 @@
+;;; ============================================================================
+;;; Aedes Population Individual-Based Model (IBM) - NetLogo Skeleton
+;;; ============================================================================
+;;;
+;;; Auto-generated skeleton from UML specification.
+;;; Fill in the behaviour implementations marked with TODO.
+;;;
+;;; Corresponds to the individual-based modeling paradigm described in:
+;;;   UML-Based Framework for Aedes Population Dynamics
+;;;   Repository: https://github.com/bhackenberger/aedes-uml-framework
+;;;
+;;; Life stages represented as agent breeds:
+;;;   eggs      - Egg stage (aquatic)
+;;;   larvae    - Larval stage (aquatic, 4 instars)
+;;;   pupae     - Pupal stage (aquatic)
+;;;   adults    - Adult stage (terrestrial/flying)
+;;;
+;;; Environmental drivers are implemented as global variables updated
+;;; each tick (= 1 day).
+;;;
+;;; Usage:
+;;;   Open this file in NetLogo 6.x
+;;;   Press Setup, then Go (or step through with Go-once)
+;;;
+;;; Author: Aedes UML Framework
+;;; License: MIT
+;;; ============================================================================
+
+
+;;; ----------------------------------------------------------------------------
+;;; BREEDS
+;;; ----------------------------------------------------------------------------
+
+breed [ eggs      egg      ]
+breed [ larvae    larva    ]
+breed [ pupae     pupa     ]
+breed [ adults    adult    ]
+
+
+;;; ----------------------------------------------------------------------------
+;;; AGENT-OWN VARIABLES
+;;; ----------------------------------------------------------------------------
+
+eggs-own [
+  age-days            ;; days since oviposition
+  degree-days-accum   ;; accumulated degree-days above base temp
+  in-diapause?        ;; boolean: diapause state
+  cold-tolerance      ;; minimum survival temperature (°C)
+  hatching-threshold  ;; degree-days required for hatching
+  my-site             ;; breeding-site patch where egg resides
+]
+
+larvae-own [
+  age-days
+  instar              ;; current instar (1-4)
+  degree-days-accum
+  my-site
+  feeding-rate        ;; relative feeding rate [0,1]
+]
+
+pupae-own [
+  age-days
+  degree-days-accum
+  emergence-threshold ;; degree-days required for emergence
+  my-site
+]
+
+adults-own [
+  age-days
+  sex                 ;; "male" or "female"
+  mated?
+  bloodfed?
+  gravid?
+  gonotrophic-day     ;; current day within gonotrophic cycle
+  gonotrophic-length  ;; total gonotrophic cycle length (days)
+  fecundity           ;; eggs per oviposition
+  flight-range        ;; maximum dispersal distance (m, scaled to patches)
+]
+
+patches-own [
+  is-breeding-site?   ;; TRUE for patches with standing water
+  water-volume        ;; relative water volume [0,1]
+  larval-density      ;; count of larvae on this patch
+  site-type           ;; "container" | "tire" | "natural" | "artificial"
+]
+
+
+;;; ----------------------------------------------------------------------------
+;;; GLOBAL VARIABLES
+;;; ----------------------------------------------------------------------------
+
+globals [
+  ;; --- Environmental state (updated each tick) ---
+  current-doy         ;; day of year (1-365)
+  temp-mean           ;; daily mean temperature (°C)
+  temp-min
+  temp-max
+  photoperiod         ;; day length (hours)
+  precipitation       ;; daily precipitation (mm)
+
+  ;; --- Model parameters ---
+  param-T-min         ;; lower developmental threshold (°C)
+  param-T-max         ;; upper thermal limit (°C)
+  param-T-opt         ;; optimal temperature (°C)
+  param-K             ;; carrying capacity per breeding site (larvae)
+  param-fecundity     ;; eggs per female per gonotrophic cycle
+  param-sex-ratio     ;; proportion female at emergence
+  param-latitude      ;; geographic latitude (degrees north)
+  param-diapause-L    ;; critical photoperiod for diapause (hours)
+
+  ;; --- Baseline daily survival probabilities ---
+  param-surv-egg
+  param-surv-larva
+  param-surv-pupa
+  param-surv-adult-m
+  param-surv-adult-f
+
+  ;; --- Baseline development rates (1/day at T-opt) ---
+  param-dev-egg
+  param-dev-larva
+  param-dev-pupa
+
+  ;; --- Tracking ---
+  total-eggs
+  total-larvae
+  total-pupae
+  total-adults
+]
+
+
+;;; ============================================================================
+;;; SETUP
+;;; ============================================================================
+
+to setup
+  clear-all
+
+  ;; Initialise parameters
+  set-default-parameters
+
+  ;; Create landscape
+  setup-patches
+
+  ;; Seed initial population
+  create-initial-population
+
+  ;; Initialise environmental drivers
+  set current-doy 1
+  update-environment
+
+  reset-ticks
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to set-default-parameters
+  ;; TODO: Calibrate all values against species-specific data
+  set param-T-min        10.0
+  set param-T-max        35.0
+  set param-T-opt        25.0
+  set param-K           500
+  set param-fecundity    80
+  set param-sex-ratio     0.5
+  set param-latitude     45.0
+  set param-diapause-L   12.0
+
+  set param-surv-egg     0.95
+  set param-surv-larva   0.90
+  set param-surv-pupa    0.92
+  set param-surv-adult-m 0.88
+  set param-surv-adult-f 0.88
+
+  set param-dev-egg   0.10
+  set param-dev-larva 0.07
+  set param-dev-pupa  0.15
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to setup-patches
+  ;; Designate some patches as breeding sites
+  ;; TODO: Replace random assignment with realistic landscape configuration
+  ask patches [
+    set is-breeding-site? false
+    set pcolor 55  ;; green background
+  ]
+
+  ;; Random subset as breeding sites (≈10% of patches)
+  ask n-of (round (count patches * 0.10)) patches [
+    set is-breeding-site? true
+    set water-volume 1.0
+    set site-type    "container"
+    set pcolor       97  ;; light blue
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to create-initial-population
+  ;; Seed adult females on random breeding-site patches
+  ;; TODO: Adjust initial conditions to match study population
+  let sites patches with [ is-breeding-site? ]
+  ask n-of 20 sites [
+    sprout-adults 1 [
+      set sex           "female"
+      set age-days      0
+      set mated?        true
+      set bloodfed?     false
+      set gravid?       false
+      set gonotrophic-day    0
+      set gonotrophic-length 4
+      set fecundity     param-fecundity
+      set flight-range  5  ;; patches
+      set shape "bug"
+      set color red
+      set size 1.5
+    ]
+  ]
+end
+
+
+;;; ============================================================================
+;;; MAIN SIMULATION LOOP
+;;; ============================================================================
+
+to go
+  if ticks >= 365 [ stop ]  ;; TODO: adjust stopping criterion
+
+  ;; Advance calendar
+  set current-doy (current-doy mod 365) + 1
+  update-environment
+
+  ;; Life-stage specific processes (order matters for IBM)
+  eggs-step
+  larvae-step
+  pupae-step
+  adults-step
+
+  ;; Update patch densities
+  update-patch-densities
+
+  ;; Record output
+  update-counts
+
+  tick
+end
+
+
+;;; ============================================================================
+;;; ENVIRONMENTAL UPDATES
+;;; ============================================================================
+
+to update-environment
+  ;; Temperature: sinusoidal approximation
+  ;; TODO: Replace with observed time series (read from file with csv extension)
+  set temp-mean  15 + 10 * sin(2 * pi * (current-doy - 91) / 365)
+  set temp-min   temp-mean - 5
+  set temp-max   temp-mean + 5
+
+  ;; Photoperiod
+  set photoperiod  calculate-photoperiod current-doy param-latitude
+
+  ;; Precipitation (stochastic placeholder)
+  ;; TODO: Replace with observed series
+  set precipitation  max list 0 (random-normal 2 3)
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to-report calculate-photoperiod [ doy lat ]
+  ;; Approximate day length (hours)
+  let lat-rad lat * pi / 180
+  let decl    23.45 * sin(2 * pi * (284 + doy) / 365) * pi / 180
+  let cos-ha  (- tan lat-rad) * tan decl
+  set cos-ha  max (list -1 (min list 1 cos-ha))
+  let ha      acos cos-ha
+  report 2 * ha * 180 / pi / 15
+end
+
+
+;;; ============================================================================
+;;; EGG PROCEDURES
+;;; ============================================================================
+
+to eggs-step
+  ask eggs [
+    ;; Age
+    set age-days age-days + 1
+
+    ;; Accumulate degree-days
+    let dd max list 0 (temp-mean - param-T-min)
+    set degree-days-accum degree-days-accum + dd
+
+    ;; Diapause check
+    if photoperiod < param-diapause-L and temp-mean < (param-T-min + 2) [
+      set in-diapause? true
+    ]
+    if photoperiod >= param-diapause-L and temp-mean > (param-T-min + 5) [
+      set in-diapause? false
+    ]
+
+    ;; Survival
+    let s-mod survival-modifier temp-mean
+    let surv  param-surv-egg * s-mod
+    if random-float 1 > surv [ die ]
+
+    ;; Hatching
+    if not in-diapause? [
+      ;; TODO: replace degree-day threshold with species-specific value
+      if degree-days-accum >= 100 [
+        hatch-to-larva
+      ]
+    ]
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to hatch-to-larva  ;; egg procedure
+  let site my-site
+  hatch-larvae 1 [
+    set age-days           0
+    set instar             1
+    set degree-days-accum  0
+    set my-site            site
+    set shape "circle"
+    set color  blue
+    set size   1.0
+  ]
+  die
+end
+
+
+;;; ============================================================================
+;;; LARVA PROCEDURES
+;;; ============================================================================
+
+to larvae-step
+  ask larvae [
+    set age-days age-days + 1
+
+    let dd max list 0 (temp-mean - param-T-min)
+    set degree-days-accum degree-days-accum + dd
+
+    ;; Density-dependent survival
+    let n-here [ larval-density ] of my-site
+    let dd-surv density-survival n-here param-K
+    let s-mod   survival-modifier temp-mean
+    let surv    param-surv-larva * s-mod * dd-surv
+    if random-float 1 > surv [ die ]
+
+    ;; Instar progression
+    ;; TODO: replace fixed thresholds with species-specific values
+    let instar-thresholds (list 30 60 90 120)
+    if instar < 4 and degree-days-accum >= (item (instar - 1) instar-thresholds) [
+      set instar            instar + 1
+      set degree-days-accum 0
+    ]
+
+    ;; Pupation from instar 4
+    if instar = 4 and degree-days-accum >= 120 [
+      larva-pupate
+    ]
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to larva-pupate  ;; larva procedure
+  let site my-site
+  hatch-pupae 1 [
+    set age-days           0
+    set degree-days-accum  0
+    set emergence-threshold 50  ;; TODO: species-specific
+    set my-site            site
+    set shape "circle"
+    set color  cyan
+    set size   1.2
+  ]
+  die
+end
+
+
+;;; ============================================================================
+;;; PUPA PROCEDURES
+;;; ============================================================================
+
+to pupae-step
+  ask pupae [
+    set age-days age-days + 1
+
+    let dd max list 0 (temp-mean - param-T-min)
+    set degree-days-accum degree-days-accum + dd
+
+    ;; Survival
+    let s-mod survival-modifier temp-mean
+    let surv  param-surv-pupa * s-mod
+    if random-float 1 > surv [ die ]
+
+    ;; Emergence
+    if degree-days-accum >= emergence-threshold [
+      pupa-emerge
+    ]
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to pupa-emerge  ;; pupa procedure
+  let emerge-sex ifelse-value (random-float 1 < param-sex-ratio)
+                 [ "female" ] [ "male" ]
+  hatch-adults 1 [
+    set age-days          0
+    set sex               emerge-sex
+    set mated?            false
+    set bloodfed?         false
+    set gravid?           false
+    set gonotrophic-day    0
+    set gonotrophic-length 4  ;; TODO: temperature-dependent
+    set fecundity          param-fecundity
+    set flight-range       5
+    set shape "bug"
+    set color  ifelse-value (sex = "female") [ red ] [ orange ]
+    set size   1.5
+  ]
+  die
+end
+
+
+;;; ============================================================================
+;;; ADULT PROCEDURES
+;;; ============================================================================
+
+to adults-step
+  ask adults [
+    set age-days age-days + 1
+
+    ;; Dispersal
+    adult-disperse
+
+    ;; Sex-specific survival
+    let s-mod survival-modifier temp-mean
+    let surv  ifelse-value (sex = "female")
+              [ param-surv-adult-f * s-mod ]
+              [ param-surv-adult-m * s-mod ]
+    if random-float 1 > surv [ die ]
+
+    ;; Mating (males)
+    if sex = "male" and not mated? [ adult-mate ]
+
+    ;; Female-specific behaviour
+    if sex = "female" [
+      if not bloodfed? [ adult-seek-host ]
+      if bloodfed? and not gravid? [ adult-develop-eggs ]
+      if gravid? [ adult-oviposit ]
+    ]
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to adult-disperse  ;; adult procedure
+  ;; Random walk with flight-range constraint
+  ;; TODO: Replace with more realistic dispersal kernel (e.g. exponential)
+  let angle random 360
+  let dist  random-float flight-range
+  set heading angle
+  fd dist
+  ;; Constrain to world bounds
+  if not can-move? 0 [ set heading (heading + 180) ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to adult-mate  ;; adult procedure (female seeking male)
+  ;; TODO: Implement mating encounter probability
+  if any? adults with [ sex = "male" ] in-radius 2 [
+    set mated? true
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to adult-seek-host  ;; female procedure
+  ;; TODO: Implement host-seeking probability (depends on temp, density, hosts)
+  let p-bloodmeal 0.30  ;; placeholder: 30% daily success
+  if random-float 1 < p-bloodmeal [
+    set bloodfed?  true
+    set gonotrophic-day 0
+    ;; TODO: adjust gonotrophic-length for current temperature
+    set gonotrophic-length round (4 * param-T-opt / max list 1 temp-mean)
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to adult-develop-eggs  ;; female procedure
+  set gonotrophic-day  gonotrophic-day + 1
+  if gonotrophic-day >= gonotrophic-length [
+    set gravid? true
+  ]
+end
+
+
+;;; ----------------------------------------------------------------------------
+
+to adult-oviposit  ;; female procedure
+  ;; Find nearest breeding site
+  let site min-one-of (patches with [ is-breeding-site? ]) [ distance myself ]
+  if site != nobody [
+    move-to site
+    ;; Lay eggs
+    let n-eggs round (random-normal fecundity (fecundity * 0.1))
+    set n-eggs max list 0 n-eggs
+    hatch-eggs n-eggs [
+      set age-days           0
+      set degree-days-accum  0
+      set in-diapause?       false
+      set cold-tolerance    -5.0
+      set hatching-threshold 100.0  ;; TODO: species-specific
+      set my-site            site
+      set shape "dot"
+      set color  yellow
+      set size   0.5
+    ]
+    ;; Reset female state
+    set gravid?    false
+    set bloodfed?  false
+  ]
+end
+
+
+;;; ============================================================================
+;;; PATCH / DENSITY HELPERS
+;;; ============================================================================
+
+to update-patch-densities
+  ask patches [ set larval-density 0 ]
+  ask larvae  [ ask my-site [ set larval-density larval-density + 1 ] ]
+end
+
+
+;;; ============================================================================
+;;; VITAL-RATE HELPERS
+;;; ============================================================================
+
+;; Quadratic thermal performance curve returning a modifier in [0,1]
+to-report survival-modifier [ temp ]
+  if temp <= param-T-min or temp >= param-T-max [ report 0.0 ]
+  let mod (temp - param-T-min) * (param-T-max - temp) /
+          ((param-T-opt - param-T-min) * (param-T-max - param-T-opt))
+  report max list 0 mod
+end
+
+;; Larval density-dependent survival: 1/(1 + L/K)
+to-report density-survival [ L-total K ]
+  report 1 / (1 + L-total / K)
+end
+
+
+;;; ============================================================================
+;;; OUTPUT / MONITORING
+;;; ============================================================================
+
+to update-counts
+  set total-eggs    count eggs
+  set total-larvae  count larvae
+  set total-pupae   count pupae
+  set total-adults  count adults
+end
+
+;;; ============================================================================
+;;; END OF FILE
+;;; ============================================================================

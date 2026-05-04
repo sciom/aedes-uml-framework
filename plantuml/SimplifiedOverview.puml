@@ -1,0 +1,52 @@
+@startuml SimplifiedOverview
+
+skinparam classAttributeIconSize 0
+hide circle
+hide methods
+hide attributes
+
+title Simplified UML Overview - Aedes Population System
+
+class Egg
+class Larva
+class Pupa
+class Adult
+
+class Temperature
+class Precipitation
+
+class Larvicide
+class Adulticide
+class SourceReduction
+
+class BreedingSite
+
+Egg --> Larva : hatching
+Larva --> Pupa : pupation
+Pupa --> Adult : emergence
+Adult --> Egg : oviposition
+
+Temperature ..> Egg : affects
+Temperature ..> Larva : affects
+Temperature ..> Pupa : affects
+Temperature ..> Adult : affects
+Precipitation ..> BreedingSite : water level
+
+Egg --o BreedingSite : contained in
+Larva --o BreedingSite : contained in
+Pupa --o BreedingSite : contained in
+
+Larvicide ..> Larva : targets
+Adulticide ..> Adult : targets
+SourceReduction ..> BreedingSite : removes
+
+note "Life Stages\n(blue in full diagram)" as N1
+N1 .. Egg
+
+note "Environmental Drivers" as N2
+N2 .. Temperature
+
+note "Control Measures" as N3
+N3 .. Larvicide
+
+@enduml
